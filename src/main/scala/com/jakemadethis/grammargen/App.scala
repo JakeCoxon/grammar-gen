@@ -47,6 +47,9 @@ object App {
     }
 
     locally {
+
+      import StringGrammar._
+
       def prods(prods : (String, String)*) =
         prods.map { case (l, r) => new ProductionRule(l, StringGrammar.characterForm(r)) }
 
@@ -55,7 +58,7 @@ object App {
 
       assertEq(grammar.map("A").size, 1)
       assertEq(grammar.map("B").size, 1)
-      assertEq(grammar.nonTerminals, Set("A", "B"))
+      assertEq(grammar.nonTerminals.size, 2)
     }
 
     println(numTests + " tests pass")

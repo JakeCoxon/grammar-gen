@@ -3,20 +3,24 @@ package com.jakemadethis.grammargen;
 /*
  * A grammar is a set of ProductionRules and an initial form
  */
-class Grammar[R <: ProductionRule](val productions: Seq[R], val initialForm: Form) {
-  def apply(key : String) = map(key)
-  def get(key : String) = map.get(key)
-  val map = productions.groupBy(_.symbol)
-  val nonTerminals = map.keys.toSet
+class Grammar[T : HasMorphism, R <: ProductionRule[T]](val productions: Seq[R], val initialForm: Form[T]) {
+  private val morph = implicitly[HasMorphism[T]]
+  val privateMap = productions.groupBy(p => morph.create(p.leftSide))
+  def apply(key : T) = privateMap(morph.create(key))
+  def get(key : T) = privateMap.get(morph.create(key))
+  def apply(key : Morphism[T]) = privateMap(key)
+  def get(key : Morphism[T]) = privateMap.get(key)
+  def map(key : T) = privateMap(morph.create(key))
+  val nonTerminals = privateMap.keys.map(_.value).toSet
 }
 
 /*
  * A Form is a state containing non-terminals and terminals. 
  * Non-terminals are stored in an ordered sequence while only the number of terminals are recorded.
  */
-class Form(val nonTerminals: Seq[String], val numTerminals: Int) {
+class Form[T](val nonTerminals: Seq[T], val numTerminals: Int) {
   
-  type Path[R <: ProductionRule] = Seq[(String,R)]
+  // type Path[R <: ProductionRule] = Seq[(T,R)]
   def headOption = nonTerminals.headOption
   def isTerminal = nonTerminals.isEmpty
   val nonTerminalSet = MultiSet(nonTerminals)
@@ -25,14 +29,21 @@ class Form(val nonTerminals: Seq[String], val numTerminals: Int) {
   /*
    * Replaces the first non-terminal with replacedForm and returns the new Form
    */
-  def deriveState(replacedForm : Form) =
+  def deriveState(replacedForm : Form[T]) =
     new Form(replacedForm.nonTerminals ++ nonTerminals.tail, numTerminals + replacedForm.numTerminals)
 
   override def toString = 
     "Form(%s, %d)" format (nonTerminals.mkString(""), numTerminals)
 }
 
-class ProductionRule(val symbol: String, val form: Form)
+class ProductionRule[T](val leftSide: T, val form: Form[T])
+
+trait HasMorphism[T] {
+  def create(value: T): Morphism[T]
+}
+trait Morphism[T] {
+  def value: T
+}
 
 
 
