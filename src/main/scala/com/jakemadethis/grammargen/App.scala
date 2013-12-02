@@ -61,6 +61,20 @@ object App {
       assertEq(grammar.nonTerminals.size, 2)
     }
 
+
+    // Graph
+
+    locally {
+
+      class Vertex
+      class Edge
+      val a, b, c = new Vertex
+      val graph = Hypergraph[Vertex, Edge](a, b, c)
+        .addEdge(new Edge, List(a, b))
+        .addEdge(new Edge, List(b, c))
+
+    }
+
     println(numTests + " tests pass")
   }
 

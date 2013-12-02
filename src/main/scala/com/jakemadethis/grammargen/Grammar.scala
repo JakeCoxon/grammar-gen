@@ -3,15 +3,11 @@ package com.jakemadethis.grammargen;
 /*
  * A grammar is a set of ProductionRules and an initial form
  */
-class Grammar[T : HasMorphism, R <: ProductionRule[T]](val productions: Seq[R], val initialForm: Form[T]) {
-  private val morph = implicitly[HasMorphism[T]]
-  val privateMap = productions.groupBy(p => morph.create(p.leftSide))
-  def apply(key : T) = privateMap(morph.create(key))
-  def get(key : T) = privateMap.get(morph.create(key))
-  def apply(key : Morphism[T]) = privateMap(key)
-  def get(key : Morphism[T]) = privateMap.get(key)
-  def map(key : T) = privateMap(morph.create(key))
-  val nonTerminals = privateMap.keys.map(_.value).toSet
+class Grammar[T, R <: ProductionRule[T]](val productions: Seq[R], val initialForm: Form[T]) {
+  val map = productions.groupBy(_.leftSide)
+  def apply(key : T) = map(key)
+  def get(key : T) = map.get(key)
+  val nonTerminals = map.keys.toSet
 }
 
 /*
@@ -37,14 +33,6 @@ class Form[T](val nonTerminals: Seq[T], val numTerminals: Int) {
 }
 
 class ProductionRule[T](val leftSide: T, val form: Form[T])
-
-trait HasMorphism[T] {
-  def create(value: T): Morphism[T]
-}
-trait Morphism[T] {
-  def value: T
-}
-
 
 
 ///////////////////////////////
