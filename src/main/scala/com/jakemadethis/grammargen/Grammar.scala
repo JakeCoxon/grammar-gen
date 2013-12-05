@@ -12,7 +12,7 @@ class Grammar[T, R <: ProductionRule[T]](val productions: Seq[R], val initialFor
 
 /*
  * A Form is a state containing non-terminals and terminals. 
- * Non-terminals are stored in an ordered sequence while only the number of terminals are recorded.
+ * The form provides an ordering for non-terminals and only the number of terminals is needed
  */
 class Form[T](val nonTerminals: Seq[T], val numTerminals: Int) {
   

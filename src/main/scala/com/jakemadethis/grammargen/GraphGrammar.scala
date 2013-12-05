@@ -26,6 +26,27 @@ trait Hypergraph[V, E] {
 object Hypergraph {
   def apply[V, E]() = new OrderedHypergraph[V, E](Set(), Set(), Map(), Map())
   def apply[V, E](v: V, vn: V*) = new OrderedHypergraph[V, E]((vn :+ v).toSet, Set(), Map(), Map())
+
+
+  def foldEdges[A, B](edges: Seq[A])(f: (A, Seq[B]) => Seq[B]) = {
+    (edges :\ Map[A, Seq[B]]()) { (e, res) => 
+      res + (e -> f(e, res get e getOrElse Seq()))
+    }
+  }
+  def foldVertices[A, B](vertices: Seq[A])(f: (A, Set[B]) => Set[B]) = {
+    (vertices :\ Map[A, Set[B]]()) { (v, res) => 
+      res + (v -> f(v, res get v getOrElse Set()))
+    }
+  }
+}
+
+class Handle[V, E](val edge: E, vertices: Seq[V]) 
+  extends OrderedHypergraph[V, E](
+    vertices  = vertices.toSet, 
+    edges     = Set(edge),
+    edgeMap   = Map(edge -> vertices),
+    vertexMap = Hypergraph.foldVertices(vertices, Map[V, Set[E]]()) { (v, edges) => edges + edge }) {
+  val size = vertices.size
 }
 
 class OrderedHypergraph[V, E](
@@ -33,8 +54,9 @@ class OrderedHypergraph[V, E](
   val edges: Set[E],
   edgeMap: Map[E, Seq[V]],
   vertexMap: Map[V, Set[E]]) extends Hypergraph[V, E] {
+  import Hypergraph._
 
-  def incidentEdges(vertex: V) = vertexMap(vertex)
+  def incidentEdges(vertex: V) = vertexMap(vertex )
   def incidentVertices(edge: E) = edgeMap(edge)
 
   def neighbors(vertex: V) = ???
@@ -46,7 +68,7 @@ class OrderedHypergraph[V, E](
     } else
       new OrderedHypergraph[V, E](vertices, edges + edge,
         edgeMap + (edge -> attached),
-        mapVertexIncidents(attached) { (v, edges) => edges + edge })
+        vertexMap + foldVertices(attached) { (v, edges) => edges + edge })
   }
 
   def addVertex(vertex: V) = 
@@ -55,7 +77,7 @@ class OrderedHypergraph[V, E](
   def removeEdge(edge: E) = {
     new OrderedHypergraph[V,E](vertices, edges - edge, 
       edgeMap - edge,
-      mapVertexIncidents(edgeMap(edge)) { (v, edges) => edges - edge })
+      vertexMap + foldVertices(edgeMap(edge)) { (v, edges) => edges - edge })
   }
 
   def removeVertex(vertex: V) = {
@@ -65,12 +87,12 @@ class OrderedHypergraph[V, E](
       edgeMap, vertexMap - vertex)
   }
 
-  private def mapVertexIncidents(vertices: Seq[V])(f: (V, Set[E]) => Set[E]) = {
+  protected def mapVertexIncidents(vertices: Seq[V])(f: (V, Set[E]) => Set[E]) = {
     (vertices :\ vertexMap) { (v, resultVertexMap) => 
       resultVertexMap + (v -> f(v, resultVertexMap get v getOrElse Set()))
     }
   }
-  private def mapEdgeIncidents(edges: Seq[E])(f: (E, Seq[V]) => Seq[V]) = {
+  protected def mapEdgeIncidents(edges: Seq[E])(f: (E, Seq[V]) => Seq[V]) = {
     (edges :\ edgeMap) { (e, resultEdgeMap) => 
       resultEdgeMap + (e -> f(e, resultEdgeMap get e getOrElse Seq()))
     }

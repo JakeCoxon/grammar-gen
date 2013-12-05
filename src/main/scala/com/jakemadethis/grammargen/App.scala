@@ -73,6 +73,8 @@ object App {
         .addEdge(new Edge, List(a, b))
         .addEdge(new Edge, List(b, c))
 
+
+      val handle = new Handle(new Edge, new Vertex :: new Vertex :: new Vertex :: Nil)
     }
 
     println(numTests + " tests pass")
