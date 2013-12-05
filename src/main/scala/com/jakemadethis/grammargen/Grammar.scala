@@ -3,11 +3,11 @@ package com.jakemadethis.grammargen;
 /*
  * A grammar is a set of ProductionRules and an initial form
  */
-class Grammar[T, R <: ProductionRule[T]](val productions: Seq[R], val initialForm: Form[T]) {
-  val map = productions.groupBy(_.leftSide)
-  def apply(key : T) = map(key)
-  def get(key : T) = map get key
-  val nonTerminals = map.keys.toSet
+class Grammar[T](val productions: Seq[ProductionRule[T]], val initialForm: Form[T]) {
+  val map = productions.groupBy(k => hash(k.leftSide))
+  def apply(key : T) = map(hash(key))
+  def get(key : T) = map get hash(key)
+  def hash(key: T) : Any = key
 }
 
 /*

@@ -45,7 +45,7 @@ class Handle[V, E](val edge: E, vertices: Seq[V])
     vertices  = vertices.toSet, 
     edges     = Set(edge),
     edgeMap   = Map(edge -> vertices),
-    vertexMap = Hypergraph.foldVertices(vertices, Map[V, Set[E]]()) { (v, edges) => edges + edge }) {
+    vertexMap = Hypergraph.foldVertices(vertices) { (v, edges) => edges + edge }) {
   val size = vertices.size
 }
 
@@ -68,7 +68,7 @@ class OrderedHypergraph[V, E](
     } else
       new OrderedHypergraph[V, E](vertices, edges + edge,
         edgeMap + (edge -> attached),
-        vertexMap + foldVertices(attached) { (v, edges) => edges + edge })
+        vertexMap ++ foldVertices[V, E](attached) { (v, edges) => edges + edge })
   }
 
   def addVertex(vertex: V) = 
@@ -77,7 +77,7 @@ class OrderedHypergraph[V, E](
   def removeEdge(edge: E) = {
     new OrderedHypergraph[V,E](vertices, edges - edge, 
       edgeMap - edge,
-      vertexMap + foldVertices(edgeMap(edge)) { (v, edges) => edges - edge })
+      vertexMap ++ foldVertices[V, E](edgeMap(edge)) { (v, edges) => edges - edge })
   }
 
   def removeVertex(vertex: V) = {
