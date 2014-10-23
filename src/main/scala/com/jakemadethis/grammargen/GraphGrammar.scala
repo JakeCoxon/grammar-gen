@@ -33,9 +33,9 @@ object Hypergraph {
       res + (e -> f(e, res get e getOrElse Seq()))
     }
   }
-  def foldVertices[A, B](vertices: Seq[A])(f: (A, Set[B]) => Set[B]) = {
+  def foldVertices[A, B](vertices: Seq[A])(f: Set[B] => Set[B]) = {
     (vertices :\ Map[A, Set[B]]()) { (v, res) => 
-      res + (v -> f(v, res get v getOrElse Set()))
+      res + (v -> f(res get v getOrElse Set()))
     }
   }
 }
@@ -45,7 +45,7 @@ class Handle[V, E](val edge: E, vertices: Seq[V])
     vertices  = vertices.toSet, 
     edges     = Set(edge),
     edgeMap   = Map(edge -> vertices),
-    vertexMap = Hypergraph.foldVertices(vertices) { (v, edges) => edges + edge }) {
+    vertexMap = Hypergraph.foldVertices(vertices)(_ + edge)) {
   val size = vertices.size
 }
 
@@ -54,6 +54,7 @@ class OrderedHypergraph[V, E](
   val edges: Set[E],
   edgeMap: Map[E, Seq[V]],
   vertexMap: Map[V, Set[E]]) extends Hypergraph[V, E] {
+
   import Hypergraph._
 
   def incidentEdges(vertex: V) = vertexMap(vertex )
@@ -62,13 +63,13 @@ class OrderedHypergraph[V, E](
   def neighbors(vertex: V) = ???
 
   def addEdge(edge: E, attached: Seq[V]) = {
-    if (containsEdge(edge)) {
-      if (edgeMap(edge) == attached) this
-      else throw new IllegalArgumentException("Edge already exists with different endpoints")
-    } else
+    if (!containsEdge(edge)) 
       new OrderedHypergraph[V, E](vertices, edges + edge,
         edgeMap + (edge -> attached),
-        vertexMap ++ foldVertices[V, E](attached) { (v, edges) => edges + edge })
+        vertexMap ++ foldVertices[V, E](attached)(_ + edge))
+    else if (edgeMap(edge) != attached) 
+      throw new IllegalArgumentException("Edge already exists with different endpoints")
+    else this
   }
 
   def addVertex(vertex: V) = 
@@ -77,7 +78,7 @@ class OrderedHypergraph[V, E](
   def removeEdge(edge: E) = {
     new OrderedHypergraph[V,E](vertices, edges - edge, 
       edgeMap - edge,
-      vertexMap ++ foldVertices[V, E](edgeMap(edge)) { (v, edges) => edges - edge })
+      vertexMap ++ foldVertices[V, E](edgeMap(edge))(_ - edge))
   }
 
   def removeVertex(vertex: V) = {
@@ -85,17 +86,6 @@ class OrderedHypergraph[V, E](
     new OrderedHypergraph[V, E](
       vertices - vertex, edges,
       edgeMap, vertexMap - vertex)
-  }
-
-  protected def mapVertexIncidents(vertices: Seq[V])(f: (V, Set[E]) => Set[E]) = {
-    (vertices :\ vertexMap) { (v, resultVertexMap) => 
-      resultVertexMap + (v -> f(v, resultVertexMap get v getOrElse Set()))
-    }
-  }
-  protected def mapEdgeIncidents(edges: Seq[E])(f: (E, Seq[V]) => Seq[V]) = {
-    (edges :\ edgeMap) { (e, resultEdgeMap) => 
-      resultEdgeMap + (e -> f(e, resultEdgeMap get e getOrElse Seq()))
-    }
   }
 
 }

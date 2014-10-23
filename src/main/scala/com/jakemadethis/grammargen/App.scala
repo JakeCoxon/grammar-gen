@@ -9,6 +9,12 @@ object App {
     numTests += 1
   }
 
+  def time(f: => Unit) {
+    val t0 = System.nanoTime(); f
+    val result = (System.nanoTime() - t0) / 1000000
+    println(s"Elapsed time: ${result}ms")
+  }
+
   def main(args : Array[String]) {
 
     locally {
@@ -46,6 +52,8 @@ object App {
       assertEq(derived2.numTerminals, 10)
     }
 
+    // String grammar
+
     locally {
 
       import StringGrammar._
@@ -75,6 +83,87 @@ object App {
 
 
       val handle = new Handle(new Edge("A"), new Vertex :: new Vertex :: new Vertex :: Nil)
+
+    }
+
+    // Grammar Gen
+
+    def grammar(prodStrings : (String, String)*) = {
+      val prods = prodStrings.map { case (l, r) => 
+        new ProductionRule(l, StringGrammar.characterForm(r)) 
+      }
+
+      val init = StringGrammar.characterForm("S")
+      new Grammar(prods, init)
+    }
+
+    locally {
+
+      locally {
+        val enum = new GrammarEnumerator(grammar("S" -> "a", "S" -> "a"))
+        assertEq(enum.count("S", 1), 2)
+      }
+
+      locally {
+        val enum = new GrammarEnumerator(grammar("S" -> "a", "S" -> "aa", "S" -> "jake"))
+        enum.precompute(4)
+        assertEq(enum.count("S", 1), 1)
+        assertEq(enum.count("S", 2), 1)
+        assertEq(enum.count("S", 3), 0)
+        assertEq(enum.count("S", 4), 1)
+        assertEq(enum.count("S", 5), 0)
+      }
+
+      locally {
+        val enum = new GrammarEnumerator(grammar("S" -> "a", "S" -> "Sa"))
+        enum.precompute(100)
+        assertEq(enum.count("S", 1), 1)
+        assertEq(enum.count("S", 2), 1)
+        assertEq(enum.count("S", 100), 1)
+      }
+
+      locally {
+        val enum = new GrammarEnumerator(grammar(
+          "S" -> "a", "S" -> "Sa", "S" -> "Saa"
+        ))
+        enum.precompute(4)
+        assertEq(enum.count("S", 1), 1)
+        assertEq(enum.count("S", 2), 1)
+        assertEq(enum.count("S", 4), 3)
+      }
+
+      locally {
+        val enum = new GrammarEnumerator(grammar(
+          "S" -> "a", "S" -> "Sa", "S" -> "SSa"
+        ))
+        enum.precompute(5)
+        assertEq(enum.count("S", 5), 9)
+      }
+
+      locally {
+        val enum = new GrammarEnumerator(grammar(
+          "S" -> "s", "S" -> "ss", "S" -> "SA",
+          "A" -> "Aa", "A" -> "a"
+        ))
+        enum.precompute(6)
+        assertEq(enum.count("S", 1), 1)
+        assertEq(enum.count("S", 2), 2)
+        assertEq(enum.count("S", 3), 3)
+        assertEq(enum.count("S", 4), 6)
+        assertEq(enum.count("S", 5), 12)
+        assertEq(enum.count("S", 6), 24)
+      }
+
+      // locally {
+      //   val enum = new GrammarEnumerator(grammar(
+      //     "S" -> "s", "S" -> "ss", "S" -> "SA",
+      //     "A" -> "Aa", "A" -> "a"
+      //   ))
+      //   time {
+      //     enum.precompute(200)
+      //     enum.count("S", 200)
+      //   }
+      // }
 
     }
 
