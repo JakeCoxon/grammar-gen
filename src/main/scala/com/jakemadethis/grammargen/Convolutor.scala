@@ -18,7 +18,7 @@ class MemoizableConvolutor(func : BigInt => BigInt) extends Convolutor {
     
   def precompute(len : Int) {
     for (i <- 2 to len) {
-      convFuncs(i) = selfConvolution(i)
+      getN(i)
     }
 
     for (i <- 0 to len;
@@ -27,5 +27,5 @@ class MemoizableConvolutor(func : BigInt => BigInt) extends Convolutor {
     }
   }
 
-  def getN(n : Int) = convFuncs(n)
+  def getN(n : Int) = convFuncs.getOrElseUpdate(n, selfConvolution(n))
 }

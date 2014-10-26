@@ -3,25 +3,25 @@ import scala.collection.mutable.{Map => MutableMap}
 import scala.collection.mutable.Buffer
 import scala.collection.mutable.ArrayBuffer
 
-class GrammarEnumerator[D](val grammar: Grammar[D]) {
+class GrammarEnumerator[SingleType, SeqType, F <: Form[SingleType, SeqType]]
+  (val grammar: Grammar[SingleType, SeqType, F]) {
   
   import util._
 
-  val conv = MutableMap[D, Convolutor]()
-  private def conv1(nt: D) = conv(nt).getN(1)
-  private def lazyConv1(nt : D)(x : BigInt) = conv1(nt)(x)
+  private def conv1(nt: SingleType) = convCache(nt).getN(1)
+  private def lazyConv1(nt : SingleType)(x : BigInt) = conv1(nt)(x)
 
-  def count(nt: D, len : Int) = conv1(nt)(len)
+  def count(nt: SingleType, len : Int) = conv1(nt)(len)
   
-  def countAll(set: MultiSet[D], len : Int) : BigInt = {
+  def countAll(set: MultiSet[SingleType], len : Int) : BigInt = {
     if (set.isEmpty) return d0(len)
-    set.map { case (nt, num) => conv(nt).getN(num) }
+    set.map { case (nt, num) => convCache(nt).getN(num) }
       .reduce { convolution(_,_) }(len)
   }
   
-  def count(prod : Form[D], len : Int) = countAll(prod.nonTerminalSet, len - prod.numTerminals)
+  def count(prod : F, len : Int) = countAll(prod.nonTerminalSet, len - prod.numTerminals)
   
-  def countRange(derivation : Form[D], min : Int, max : Int) = 
+  def countRange(derivation : F, min : Int, max : Int) = 
     (min to max).foldLeft(BigInt(0)) { case (result, i) => result + count(derivation, i) }
   
   def precompute(len : Int) {
@@ -30,7 +30,7 @@ class GrammarEnumerator[D](val grammar: Grammar[D]) {
     }
 
     for (nt <- grammar.map.keys) {
-      conv(nt).precompute(len)
+      convCache(nt).precompute(len)
     }
   }
   
@@ -41,22 +41,22 @@ class GrammarEnumerator[D](val grammar: Grammar[D]) {
     fOrig(n) + f1(n - t)
   }
   
-  grammar.map.foreach { case (nt, prods) =>
+  val convCache : Map[SingleType, Convolutor] = grammar.map.mapValues { prods =>
 
     val summation = prods.foldLeft(sumIdentity) { 
       case (sumResult, rule) => 
 
         // Todo: this should use the convFunc and multiset?
         val conv = 
-          if (rule.form.isTerminal) d0 
-          else rule.form.nonTerminals.map(lazyConv1 _).reduceLeft(convolution(_, _))
+          if (rule.rightSide.isTerminal) d0 
+          else rule.rightSide.nonTerminals.map(lazyConv1 _).reduceLeft(convolution(_, _))
         
-        sumSubtractN(sumResult, conv, rule.form.numTerminals)
+        sumSubtractN(sumResult, conv, rule.rightSide.numTerminals)
     }
     
     val func = makeMemo { x => if (x < 0) 0 else summation(x) }
-    conv(nt) = new MemoizableConvolutor(func)
-  }
+    new MemoizableConvolutor(func)
+  }.view.force
 
 
 }

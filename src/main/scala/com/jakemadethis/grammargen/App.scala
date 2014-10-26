@@ -18,10 +18,12 @@ object App {
   def main(args : Array[String]) {
 
     locally {
-      val form1 = StringGrammar.characterForm("aAbBaaBbbbBB")
-      val form2 = StringGrammar.characterForm("AAaa")
-      val form3 = StringGrammar.characterForm("c")
-      val form4 = StringGrammar.characterForm("C")
+      import StringGrammar._
+
+      val form1 = Form("aAbBaaBbbbBB")
+      val form2 = Form("AAaa")
+      val form3 = Form("c")
+      val form4 = Form("C")
 
       assertEq(form1.isSingleton, false)
       assertEq(form2.isSingleton, false)
@@ -33,22 +35,22 @@ object App {
       assertEq(form3.isTerminal, true)
       assertEq(form4.isTerminal, false)
 
-      assertEq(form1.headOption, Some("A"))
-      assertEq(form2.headOption, Some("A"))
+      assertEq(form1.headOption.map(_.value), Some("A"))
+      assertEq(form2.headOption.map(_.value), Some("A"))
       assertEq(form3.headOption, None)
-      assertEq(form4.headOption, Some("C"))
+      assertEq(form4.headOption.map(_.value), Some("C"))
 
-      assertEq(form1.nonTerminals, Seq("A","B","B","B","B"))
+      assertEq(form1.nonTerminals.map(_.value), Seq("A","B","B","B","B"))
       assertEq(form1.numTerminals, 7)
 
-      val derived1 = form1.deriveState(form2)
+      val derived1 = form1.deriveForm(form2)
 
-      assertEq(derived1.nonTerminals, Seq("A","A","B","B","B","B"))
+      assertEq(derived1.nonTerminals.map(_.value), Seq("A","A","B","B","B","B"))
       assertEq(derived1.numTerminals, 9)
 
-      val derived2 = derived1.deriveState(form3)
+      val derived2 = derived1.deriveForm(form3)
 
-      assertEq(derived2.nonTerminals, Seq("A","B","B","B","B"))
+      assertEq(derived2.nonTerminals.map(_.value), Seq("A","B","B","B","B"))
       assertEq(derived2.numTerminals, 10)
     }
 
@@ -57,16 +59,12 @@ object App {
     locally {
 
       import StringGrammar._
+      import StringGrammar.EntityFormGenerator
 
-      def prods(prods : (String, String)*) =
-        prods.map { case (l, r) => new ProductionRule(l, StringGrammar.characterForm(r)) }
+      val grammar = new WrappedGrammar(Seq("A" -> "AB", "B" -> "b"), "A")
 
-      val init = StringGrammar.characterForm("A")
-      val grammar = new Grammar(prods("A" -> "AB", "B" -> "b"), init)
-
-      assertEq(grammar.map("A").size, 1)
-      assertEq(grammar.map("B").size, 1)
-      // assertEq(grammar.nonTerminals.size, 2)
+      assertEq(grammar.wrapKey("A").size, 1)
+      assertEq(grammar.wrapKey("B").size, 1)
     }
 
 
@@ -86,40 +84,49 @@ object App {
 
     }
 
+    locally {
+
+      import StringGrammar._
+      val form : Form[Entity, EntitySeq] = Form("asd")(CharacterFormGenerator)
+
+    }
     // Grammar Gen
 
-    def grammar(prodStrings : (String, String)*) = {
-      val prods = prodStrings.map { case (l, r) => 
-        new ProductionRule(l, StringGrammar.characterForm(r)) 
-      }
-
-      val init = StringGrammar.characterForm("S")
-      new Grammar(prods, init)
-    }
+    
 
     locally {
 
+      import StringGrammar._
+
+      val Initial = NonTerminal("S")
+
+      def grammar(prodStrings : (String, String)*) = {
+
+        new WrappedGrammar(prodStrings, "S")(CharacterFormGenerator)
+      }
+
+
       locally {
         val enum = new GrammarEnumerator(grammar("S" -> "a", "S" -> "a"))
-        assertEq(enum.count("S", 1), 2)
+        assertEq(enum.count(Initial, 1), 2)
       }
 
       locally {
         val enum = new GrammarEnumerator(grammar("S" -> "a", "S" -> "aa", "S" -> "jake"))
         enum.precompute(4)
-        assertEq(enum.count("S", 1), 1)
-        assertEq(enum.count("S", 2), 1)
-        assertEq(enum.count("S", 3), 0)
-        assertEq(enum.count("S", 4), 1)
-        assertEq(enum.count("S", 5), 0)
+        assertEq(enum.count(Initial, 1), 1)
+        assertEq(enum.count(Initial, 2), 1)
+        assertEq(enum.count(Initial, 3), 0)
+        assertEq(enum.count(Initial, 4), 1)
+        assertEq(enum.count(Initial, 5), 0)
       }
 
       locally {
         val enum = new GrammarEnumerator(grammar("S" -> "a", "S" -> "Sa"))
         enum.precompute(100)
-        assertEq(enum.count("S", 1), 1)
-        assertEq(enum.count("S", 2), 1)
-        assertEq(enum.count("S", 100), 1)
+        assertEq(enum.count(Initial, 1), 1)
+        assertEq(enum.count(Initial, 2), 1)
+        assertEq(enum.count(Initial, 100), 1)
       }
 
       locally {
@@ -127,9 +134,9 @@ object App {
           "S" -> "a", "S" -> "Sa", "S" -> "Saa"
         ))
         enum.precompute(4)
-        assertEq(enum.count("S", 1), 1)
-        assertEq(enum.count("S", 2), 1)
-        assertEq(enum.count("S", 4), 3)
+        assertEq(enum.count(Initial, 1), 1)
+        assertEq(enum.count(Initial, 2), 1)
+        assertEq(enum.count(Initial, 4), 3)
       }
 
       locally {
@@ -137,7 +144,7 @@ object App {
           "S" -> "a", "S" -> "Sa", "S" -> "SSa"
         ))
         enum.precompute(5)
-        assertEq(enum.count("S", 5), 9)
+        assertEq(enum.count(Initial, 5), 9)
       }
 
       locally {
@@ -146,12 +153,12 @@ object App {
           "A" -> "Aa", "A" -> "a"
         ))
         enum.precompute(6)
-        assertEq(enum.count("S", 1), 1)
-        assertEq(enum.count("S", 2), 2)
-        assertEq(enum.count("S", 3), 3)
-        assertEq(enum.count("S", 4), 6)
-        assertEq(enum.count("S", 5), 12)
-        assertEq(enum.count("S", 6), 24)
+        assertEq(enum.count(Initial, 1), 1)
+        assertEq(enum.count(Initial, 2), 2)
+        assertEq(enum.count(Initial, 3), 3)
+        assertEq(enum.count(Initial, 4), 6)
+        assertEq(enum.count(Initial, 5), 12)
+        assertEq(enum.count(Initial, 6), 24)
       }
 
       // locally {
@@ -160,8 +167,8 @@ object App {
       //     "A" -> "Aa", "A" -> "a"
       //   ))
       //   time {
-      //     enum.precompute(200)
-      //     enum.count("S", 200)
+      //     // enum.precompute(200)
+      //     enum.count(Initial, 2)
       //   }
       // }
 
