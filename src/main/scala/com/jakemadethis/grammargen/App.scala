@@ -28,6 +28,7 @@ object App {
       assertEq(form1.isSingleton, false)
       assertEq(form2.isSingleton, false)
       assertEq(form3.isSingleton, false)
+      println(form4)
       assertEq(form4.isSingleton, true)
 
       assertEq(form1.isTerminal, false)
@@ -61,7 +62,7 @@ object App {
       import StringGrammar._
       import StringGrammar.EntityFormGenerator
 
-      val grammar = new WrappedGrammar(Seq("A" -> "AB", "B" -> "b"), "A")
+      val grammar = new WrappedGrammar(Seq("A" -> "AB", "B" -> "b"))
 
       assertEq(grammar.wrapKey("A").size, 1)
       assertEq(grammar.wrapKey("B").size, 1)
@@ -102,7 +103,7 @@ object App {
 
       def grammar(prodStrings : (String, String)*) = {
 
-        new WrappedGrammar(prodStrings, "S")(CharacterFormGenerator)
+        new WrappedGrammar(prodStrings)(CharacterFormGenerator)
       }
 
 
@@ -171,6 +172,16 @@ object App {
       //     enum.count(Initial, 2)
       //   }
       // }
+
+      locally {
+        val gram = grammar(
+          "S" -> "a", "S" -> "Sa", "S" -> "Saa"
+        )
+        val gen = new GrammarGenerator(Form("S"), gram)
+        assertEq(gen.derivations(0).result, Seq(Terminal("a")))
+        assertEq(gen.derivations(1).result, Seq(NonTerminal("S"), Terminal("a")))
+        assertEq(gen.derivations(1).derivations(0).result, Seq(Terminal("a"), Terminal("a")))
+      }
 
     }
 
