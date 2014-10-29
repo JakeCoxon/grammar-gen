@@ -28,7 +28,6 @@ object App {
       assertEq(form1.isSingleton, false)
       assertEq(form2.isSingleton, false)
       assertEq(form3.isSingleton, false)
-      println(form4)
       assertEq(form4.isSingleton, true)
 
       assertEq(form1.isTerminal, false)
@@ -177,7 +176,7 @@ object App {
         val gram = grammar(
           "S" -> "a", "S" -> "Sa", "S" -> "Saa"
         )
-        val gen = new GrammarGenerator(Form("S"), gram)
+        val gen = new InfiniteDerivationGenerator(Form("S"), gram)
         assertEq(gen.derivations(0).result, Seq(Terminal("a")))
         assertEq(gen.derivations(1).result, Seq(NonTerminal("S"), Terminal("a")))
         assertEq(gen.derivations(1).derivations(0).result, Seq(Terminal("a"), Terminal("a")))

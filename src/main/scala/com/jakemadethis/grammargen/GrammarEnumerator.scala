@@ -3,8 +3,8 @@ import scala.collection.mutable.{Map => MutableMap}
 import scala.collection.mutable.Buffer
 import scala.collection.mutable.ArrayBuffer
 
-class GrammarEnumerator[SingleType, SeqType, F <: Form[SingleType, SeqType]]
-  (val grammar: Grammar[SingleType, SeqType, F]) {
+class GrammarEnumerator[SingleType, SeqType]
+  (val grammar: Grammar[SingleType, SeqType]) {
   
   import util._
 
@@ -19,9 +19,9 @@ class GrammarEnumerator[SingleType, SeqType, F <: Form[SingleType, SeqType]]
       .reduce { convolution(_,_) }(len)
   }
   
-  def count(prod : F, len : Int) = countAll(prod.nonTerminalSet, len - prod.numTerminals)
+  def count(prod : Form[SingleType, SeqType], len : Int) = countAll(prod.nonTerminalSet, len - prod.numTerminals)
   
-  def countRange(derivation : F, min : Int, max : Int) = 
+  def countRange(derivation : Form[SingleType, SeqType], min : Int, max : Int) = 
     (min to max).foldLeft(BigInt(0)) { case (result, i) => result + count(derivation, i) }
   
   def precompute(len : Int) {
