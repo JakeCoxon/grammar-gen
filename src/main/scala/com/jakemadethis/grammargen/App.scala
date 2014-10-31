@@ -182,6 +182,14 @@ object App {
         assertEq(gen.derivations(1).derivations(0).result, Seq(Terminal("a"), Terminal("a")))
       }
 
+      locally {
+        val list = LazyList(() => {println("LOL"); 1 }, () => {println("Second"); 2 })
+        println(list.size)
+        println(list(1))
+        println(list(1))
+        println(list(1))
+      }
+
     }
 
     println(numTests + " tests pass")
