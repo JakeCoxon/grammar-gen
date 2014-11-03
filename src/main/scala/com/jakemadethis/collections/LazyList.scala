@@ -1,4 +1,4 @@
-package com.jakemadethis.grammargen;
+package com.jakemadethis.collections;
 
 import scala.collection._
 import scala.collection.mutable.ListBuffer
@@ -21,7 +21,7 @@ object LazyList extends SeqFactory[LazyList] {
     }
   }
 
-  def apply[A](seq : Seq[() => A]) : LazyList[A] = apply(seq.head, listToLazyList(seq.tail.toList))
+  def apply[A](seq : Seq[() => A]) : LazyList[A] = listToLazyList(seq.toList)
   def apply[A](f: () => A, fs: () => A*) : LazyList[A] = apply(f, listToLazyList(fs.toList))
 
 

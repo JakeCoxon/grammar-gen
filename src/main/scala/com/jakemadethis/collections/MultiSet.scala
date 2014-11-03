@@ -1,4 +1,4 @@
-package com.jakemadethis.grammargen;
+package com.jakemadethis.collections;
 
 object MultiSet {
   def apply[K]() = new MultiSet[K]()

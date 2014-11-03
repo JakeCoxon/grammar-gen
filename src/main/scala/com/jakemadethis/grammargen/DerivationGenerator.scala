@@ -1,4 +1,5 @@
 package com.jakemadethis.grammargen;
+import com.jakemadethis.collections.LazyList
 
 trait DerivationGenerator[SingleType, SeqType, Self <: DerivationGenerator[SingleType, SeqType, Self]] {
   this: Self =>
@@ -6,21 +7,23 @@ trait DerivationGenerator[SingleType, SeqType, Self <: DerivationGenerator[Singl
   def result : SeqType
 }
 
-class InfiniteDerivationGenerator[SingleType, SeqType]
+class UnboundedDerivationGenerator[SingleType, SeqType]
   (val initial: Form[SingleType, SeqType], val grammar : Grammar[SingleType, SeqType]) 
-  extends DerivationGenerator[SingleType, SeqType, InfiniteDerivationGenerator[SingleType, SeqType]] {
+  extends DerivationGenerator[SingleType, SeqType, UnboundedDerivationGenerator[SingleType, SeqType]] {
 
-  lazy val derivations : LazyList[InfiniteDerivationGenerator[SingleType, SeqType]] = {
+  private def makeLazy(prod : FormProductionRule[SingleType, SeqType])() = {
+    val derived = initial.deriveForm(prod.rightSide)
+    new UnboundedDerivationGenerator(derived, grammar)
+  }
 
-    val headNonTerminal = initial.nonTerminals.head 
-    val seq : Seq[() => InfiniteDerivationGenerator[SingleType, SeqType]] = grammar(headNonTerminal).map { form =>
-      () => {
-        val derived = initial.deriveForm(form.rightSide)
-        new InfiniteDerivationGenerator(derived, grammar)
+  lazy val derivations : LazyList[UnboundedDerivationGenerator[SingleType, SeqType]] =
+    LazyList {
+      initial.nonTerminals.headOption match {
+        case Some(headNonTerminal) => grammar(headNonTerminal).map(makeLazy)
+        case None => Seq()
       }
     }
-    LazyList(seq)
-  }
+  
 
   def result = initial.derivedResult
 
@@ -40,11 +43,21 @@ class BoundedDerivationGenerator[SingleType, SeqType]
   //       size - production.terminalSize)
   // }
 
-  def derivations = {
-    val headNonTerminal = initial.nonTerminals.head 
-    grammar(headNonTerminal).map(_.rightSide)
-    ???
+  private def makeLazy(prod : FormProductionRule[SingleType, SeqType])() = {
+    val derived = initial.deriveForm(prod.rightSide)
+    new BoundedDerivationGenerator(derived, enumerator)(size - prod.rightSide.numTerminals)
   }
+
+  private def isProductionValid(prod : FormProductionRule[SingleType, SeqType]) = 
+    enumerator.countAll(prod.rightSide.nonTerminalSet, size - prod.rightSide.numTerminals) > 0
+
+  lazy val derivations : LazyList[BoundedDerivationGenerator[SingleType, SeqType]] =
+    LazyList {
+      initial.nonTerminals.headOption match {
+        case Some(headNonTerminal) => grammar(headNonTerminal).filter(isProductionValid).map(makeLazy)
+        case None => Seq()
+      }
+    }
   
   def result = initial.derivedResult
 }

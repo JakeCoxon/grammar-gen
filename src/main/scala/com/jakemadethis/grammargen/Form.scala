@@ -1,5 +1,7 @@
 package com.jakemadethis.grammargen;
 
+import com.jakemadethis.collections.MultiSet
+
 object Form {
   def apply[InSingleType, InSeqType, SingleType, SeqType]
     (seq: InSeqType)(implicit formGen : FormConverter[InSingleType, InSeqType, SingleType, SeqType]) =

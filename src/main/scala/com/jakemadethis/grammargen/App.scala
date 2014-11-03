@@ -1,5 +1,7 @@
 package com.jakemadethis.grammargen;
 
+import com.jakemadethis.collections.LazyList
+
 object App {
 
   var numTests = 0
@@ -176,18 +178,38 @@ object App {
         val gram = grammar(
           "S" -> "a", "S" -> "Sa", "S" -> "Saa"
         )
-        val gen = new InfiniteDerivationGenerator(Form("S"), gram)
+        val gen = new UnboundedDerivationGenerator(Form("S"), gram)
+        assertEq(gen.derivations.size, 3)
         assertEq(gen.derivations(0).result, Seq(Terminal("a")))
         assertEq(gen.derivations(1).result, Seq(NonTerminal("S"), Terminal("a")))
+        assertEq(gen.derivations(2).result, Seq(NonTerminal("S"), Terminal("a"), Terminal("a")))
+
+        assertEq(gen.derivations(1).derivations.size, 3)
+        assertEq(gen.derivations(1).result, Seq(NonTerminal("S"), Terminal("a")))
         assertEq(gen.derivations(1).derivations(0).result, Seq(Terminal("a"), Terminal("a")))
+
+        assertEq(gen.derivations(1).derivations(1).derivations(1).derivations(1).derivations(1).
+                     derivations(1).derivations(1).derivations(1).derivations(1).derivations(1).
+                     derivations(1).derivations(1).derivations(1).derivations(1).derivations(1).result.size, 16)
       }
 
       locally {
-        val list = LazyList(() => {println("LOL"); 1 }, () => {println("Second"); 2 })
-        println(list.size)
-        println(list(1))
-        println(list(1))
-        println(list(1))
+        val gram = grammar(
+          "S" -> "a", "S" -> "Sa", "S" -> "Saa"
+        )
+        val enumerator = new GrammarEnumerator(gram)
+        val gen = new BoundedDerivationGenerator(Form("S"), enumerator)(5)
+        assertEq(gen.derivations.size, 2)
+        assertEq(gen.derivations(0).result, Seq(NonTerminal("S"), Terminal("a")))
+        assertEq(gen.derivations(1).result, Seq(NonTerminal("S"), Terminal("a"), Terminal("a")))
+
+        assertEq(gen.derivations(1).derivations.size, 2)
+        assertEq(gen.derivations(1).result, Seq(NonTerminal("S"), Terminal("a"), Terminal("a")))
+        assertEq(gen.derivations(1).derivations(0).result, Seq(NonTerminal("S"), Terminal("a"), Terminal("a"), Terminal("a")))
+
+        assertEq(gen.derivations(0).derivations(0).derivations(0).derivations(0).derivations(0).result, 
+            Seq(Terminal("a"), Terminal("a"), Terminal("a"), Terminal("a"), Terminal("a")))
+        assertEq(gen.derivations(0).derivations(0).derivations(0).derivations(0).derivations(0).derivations.size, 0)
       }
 
     }

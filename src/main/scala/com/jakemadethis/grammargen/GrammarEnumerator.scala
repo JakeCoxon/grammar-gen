@@ -1,4 +1,5 @@
 package com.jakemadethis.grammargen;
+import com.jakemadethis.collections.MultiSet
 import scala.collection.mutable.{Map => MutableMap}
 import scala.collection.mutable.Buffer
 import scala.collection.mutable.ArrayBuffer
