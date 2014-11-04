@@ -16,7 +16,7 @@ class GrammarEnumerator[SingleType, SeqType]
   def countAll(set: MultiSet[SingleType], len : Int) : BigInt = {
     if (set.isEmpty) return d0(len)
     set.map { case (nt, num) => convolutor.getN(nt)(num) }
-      .reduce { convolution(_,_) }(len)
+      .reduce(convolution)(len)
   }
   
   def count(prod : Form[SingleType, SeqType], len : Int) = countAll(prod.nonTerminalSet, len - prod.numTerminals)

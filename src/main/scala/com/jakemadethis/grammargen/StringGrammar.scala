@@ -7,14 +7,22 @@ object StringGrammar {
 
   type EntitySeq = Seq[Entity]
 
-  case class Entity(val value : String, val terminal : Boolean)
-  object Terminal {
-    def apply(value: String) = Entity(value, true)
-    def unapply(ent : Entity) = ent.terminal
+  trait Entity {
+    val value : String
+    val terminal : Boolean
   }
-  object NonTerminal {
-    def apply(value: String) = Entity(value, false)
-    def unapply(ent : Entity) = !ent.terminal
+  case class Terminal(value : String) extends Entity {
+    assert(value.forall(_.isLower))
+    val terminal = true
+    override def toString = value
+  }
+  case class NonTerminal(value : String) extends Entity {
+    assert(value.forall(_.isUpper))
+    val terminal = false
+    override def toString = value
+  }
+  object Entity {
+    def apply(value : String, terminal : Boolean) = if (terminal) Terminal(value) else NonTerminal(value)
   }
 
   def isCharNonTerminal(thing: Char) = thing.isUpper
@@ -35,7 +43,7 @@ object StringGrammar {
     }
   }
 
-  implicit object CharacterFormGenerator extends FormConverter[String, String, Entity, EntitySeq] {
+  implicit object CharacterFormConverter extends FormConverter[String, String, Entity, EntitySeq] {
     def createNonTerminal(str : String) = NonTerminal(str)
     def createForm(string : String) = formFromString(string)
   }

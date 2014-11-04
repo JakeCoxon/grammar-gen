@@ -1,6 +1,6 @@
-package com.jakemadethis.grammargen;
+package com.jakemadethis.grammargen
 
-import com.jakemadethis.collections.LazyList
+import com.jakemadethis.grammargen.generators._
 
 object App {
 
@@ -89,7 +89,7 @@ object App {
     locally {
 
       import StringGrammar._
-      val form : Form[Entity, EntitySeq] = Form("asd")(CharacterFormGenerator)
+      val form : Form[Entity, EntitySeq] = Form("asd")(CharacterFormConverter)
 
     }
     // Grammar Gen
@@ -104,7 +104,7 @@ object App {
 
       def grammar(prodStrings : (String, String)*) = {
 
-        new WrappedGrammar(prodStrings)(CharacterFormGenerator)
+        new WrappedGrammar(prodStrings)(CharacterFormConverter)
       }
 
 
@@ -176,17 +176,19 @@ object App {
 
       locally {
         val gram = grammar(
-          "S" -> "a", "S" -> "Sa", "S" -> "Saa"
+          "S" -> "a", "S" -> "Sa", "S" -> "SSaa"
         )
         val gen = new UnboundedDerivationGenerator(Form("S"), gram)
         assertEq(gen.derivations.size, 3)
         assertEq(gen.derivations(0).result, Seq(Terminal("a")))
         assertEq(gen.derivations(1).result, Seq(NonTerminal("S"), Terminal("a")))
-        assertEq(gen.derivations(2).result, Seq(NonTerminal("S"), Terminal("a"), Terminal("a")))
+        assertEq(gen.derivations(2).result, Seq(NonTerminal("S"), NonTerminal("S"), Terminal("a"), Terminal("a")))
 
         assertEq(gen.derivations(1).derivations.size, 3)
         assertEq(gen.derivations(1).result, Seq(NonTerminal("S"), Terminal("a")))
         assertEq(gen.derivations(1).derivations(0).result, Seq(Terminal("a"), Terminal("a")))
+
+        assertEq(gen.derivations(2).derivations(0).result, Seq(Terminal("a"), NonTerminal("S"), Terminal("a"), Terminal("a")))
 
         assertEq(gen.derivations(1).derivations(1).derivations(1).derivations(1).derivations(1).
                      derivations(1).derivations(1).derivations(1).derivations(1).derivations(1).
@@ -195,21 +197,50 @@ object App {
 
       locally {
         val gram = grammar(
-          "S" -> "a", "S" -> "Sa", "S" -> "Saa"
+          "S" -> "AAa", "A" -> "a"
+        )
+        val enumerator = new GrammarEnumerator(gram)
+        val gen = new BoundedDerivationGenerator(Form("S"), enumerator)(3)
+        assertEq(gen.derivations.size, 1)
+        assertEq(gen.derivations(0).result, Seq(NonTerminal("A"), NonTerminal("A"), Terminal("a")))
+        assertEq(gen.derivations(0).derivations.size, 1)
+        assertEq(gen.derivations(0).derivations(0).result, Seq(Terminal("a"), NonTerminal("A"), Terminal("a")))
+      }
+
+      locally {
+        val gram = grammar(
+          "S" -> "a", "S" -> "Sa", "S" -> "SSaa"
         )
         val enumerator = new GrammarEnumerator(gram)
         val gen = new BoundedDerivationGenerator(Form("S"), enumerator)(5)
         assertEq(gen.derivations.size, 2)
         assertEq(gen.derivations(0).result, Seq(NonTerminal("S"), Terminal("a")))
-        assertEq(gen.derivations(1).result, Seq(NonTerminal("S"), Terminal("a"), Terminal("a")))
+        assertEq(gen.derivations(1).result, Seq(NonTerminal("S"), NonTerminal("S"), Terminal("a"), Terminal("a")))
 
+        assertEq(gen.derivations(1).result, Seq(NonTerminal("S"), NonTerminal("S"), Terminal("a"), Terminal("a")))
         assertEq(gen.derivations(1).derivations.size, 2)
-        assertEq(gen.derivations(1).result, Seq(NonTerminal("S"), Terminal("a"), Terminal("a")))
-        assertEq(gen.derivations(1).derivations(0).result, Seq(NonTerminal("S"), Terminal("a"), Terminal("a"), Terminal("a")))
+        assertEq(gen.derivations(1).derivations(0).result, Seq(Terminal("a"), NonTerminal("S"), Terminal("a"), Terminal("a")))
+        assertEq(gen.derivations(1).derivations(1).result, Seq(NonTerminal("S"), Terminal("a"), NonTerminal("S"), Terminal("a"), Terminal("a")))
+
+        assertEq(gen.derivations(1).derivations(0).derivations(0).result, Seq(Terminal("a"), NonTerminal("S"), Terminal("a"), Terminal("a"), Terminal("a")))
 
         assertEq(gen.derivations(0).derivations(0).derivations(0).derivations(0).derivations(0).result, 
             Seq(Terminal("a"), Terminal("a"), Terminal("a"), Terminal("a"), Terminal("a")))
         assertEq(gen.derivations(0).derivations(0).derivations(0).derivations(0).derivations(0).derivations.size, 0)
+      }
+
+      locally {
+        val gram = grammar(
+          "S" -> "ABaa", "A" -> "aa", "B" -> "bbbbbbbb", "B" -> "b"
+        )
+        val enumerator = new GrammarEnumerator(gram)
+        val gen = new BoundedDerivationGenerator(Form("S"), enumerator)(5)
+        assertEq(gen.derivations.size, 1)
+        assertEq(gen.derivations(0).result, Seq(NonTerminal("A"), NonTerminal("B"), Terminal("a"), Terminal("a")))
+        assertEq(gen.derivations(0).derivations.size, 1)
+        assertEq(gen.derivations(0).derivations(0).result, Seq(Terminal("a"), Terminal("a"), NonTerminal("B"), Terminal("a"), Terminal("a")))
+        assertEq(gen.derivations(0).derivations(0).derivations.size, 1)
+        assertEq(gen.derivations(0).derivations(0).derivations(0).result, Seq(Terminal("a"), Terminal("a"), Terminal("b"), Terminal("a"), Terminal("a")))
       }
 
     }
