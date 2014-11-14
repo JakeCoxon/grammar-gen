@@ -1,6 +1,8 @@
 package com.jakemadethis.grammargen
 
+import com.jakemadethis.collections.{Hypergraph, Handle}
 import com.jakemadethis.grammargen.generators._
+import com.jakemadethis.grammars._
 
 object App {
 
@@ -241,6 +243,16 @@ object App {
         assertEq(gen.derivations(0).derivations(0).result, Seq(Terminal("a"), Terminal("a"), NonTerminal("B"), Terminal("a"), Terminal("a")))
         assertEq(gen.derivations(0).derivations(0).derivations.size, 1)
         assertEq(gen.derivations(0).derivations(0).derivations(0).result, Seq(Terminal("a"), Terminal("a"), Terminal("b"), Terminal("a"), Terminal("a")))
+      }
+
+      locally {
+        val gram = grammar(
+          "S" -> "s", "S" -> "Sb", "S" -> "Sa"
+        )
+        val enum = new GrammarEnumerator(gram)
+        val gen = new BoundedDerivationGenerator(Form("S"), enum)(10)
+        assertEq(gen.allDerivations.filter(_.initial.isTerminal).size, 512)
+
       }
 
     }

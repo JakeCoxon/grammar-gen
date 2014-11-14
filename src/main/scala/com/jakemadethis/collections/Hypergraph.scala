@@ -1,4 +1,4 @@
-package com.jakemadethis.grammargen;
+package com.jakemadethis.collections;
 
 trait Hypergraph[V, E] {
   def addEdge(edge: E, vertices: Seq[V]): Hypergraph[V, E]

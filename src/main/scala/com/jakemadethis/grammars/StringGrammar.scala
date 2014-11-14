@@ -1,4 +1,6 @@
-package com.jakemadethis.grammargen;
+package com.jakemadethis.grammars
+
+import com.jakemadethis.grammargen._
 
 object StringGrammar {
 

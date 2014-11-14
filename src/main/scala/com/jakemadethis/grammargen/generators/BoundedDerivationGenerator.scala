@@ -4,7 +4,7 @@ import com.jakemadethis.grammargen._
 import com.jakemadethis.collections.LazyList
 
 class BoundedDerivationGenerator[SingleType, SeqType]
-  (initial: Form[SingleType, SeqType], enumerator : GrammarEnumerator[SingleType, SeqType])(size: Int)
+  (val initial: Form[SingleType, SeqType], enumerator : GrammarEnumerator[SingleType, SeqType])(size: Int)
   extends DerivationGenerator[SingleType, SeqType, BoundedDerivationGenerator[SingleType, SeqType]] {
 
   type FormType = Form[SingleType, SeqType]

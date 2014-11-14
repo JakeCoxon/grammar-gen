@@ -28,4 +28,3 @@ class GrammarEnumerator[SingleType, SeqType]
   
 
 }
-
